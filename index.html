@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GH0ST_C0DE // Hacker Portfolio</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@latest/latin-400-normal.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@latest/latin-700-normal.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/orbitron@latest/latin-700-normal.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/orbitron@latest/latin-900-normal.min.css">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { term:'#00ff41', termdim:'#00b32e', cyanx:'#00e5ff', magx:'#ff0055', bgx:'#040906', panel:'#07120c' },
+    fontFamily: { mono:['"JetBrains Mono"','monospace'], disp:['Orbitron','sans-serif'] }
+  }}
+}
+</script>
+<style>
+  html{scroll-behavior:smooth;scroll-padding-top:90px}
+  body{background:#040906;overflow-x:hidden}
+  ::selection{background:#00ff41;color:#000}
+  ::-webkit-scrollbar{width:8px}
+  ::-webkit-scrollbar-track{background:#040906}
+  ::-webkit-scrollbar-thumb{background:#00ff4133;border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#00ff4177}
+  @media (pointer:fine){ body, a, button, input, textarea{cursor:none} }
+
+  /* ---------- overlays ---------- */
+  #matrix{position:fixed;inset:0;z-index:0;opacity:.32;transition:filter .5s,opacity .5s}
+  body.overdrive #matrix{opacity:.6;filter:brightness(1.7) saturate(1.4)}
+  .scanlines{position:fixed;inset:0;z-index:60;pointer-events:none;
+    background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.18) 2px 4px);mix-blend-mode:overlay}
+  .scanbeam{position:fixed;left:0;right:0;height:120px;z-index:61;pointer-events:none;
+    background:linear-gradient(180deg,transparent,rgba(0,255,65,.06),transparent);
+    animation:scanMove 7s linear infinite}
+  @keyframes scanMove{0%{top:-15%}100%{top:110%}}
+  .vignette{position:fixed;inset:0;z-index:59;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+  /* ---------- custom cursor ---------- */
+  #cursorDot,#cursorRing{position:fixed;top:0;left:0;z-index:999;pointer-events:none;border-radius:50%}
+  #cursorDot{width:6px;height:6px;background:#00ff41;box-shadow:0 0 8px #00ff41}
+  #cursorRing{width:34px;height:34px;border:1px solid rgba(0,255,65,.55);transition:width .2s,height .2s,border-color .2s}
+  #cursorRing.hov{width:52px;height:52px;border-color:#00e5ff}
+  @media (pointer:coarse){#cursorDot,#cursorRing{display:none}}
+
+  /* ---------- boot ---------- */
+  #boot{transition:opacity .6s ease}
+  #boot.done{opacity:0;pointer-events:none}
+
+  /* ---------- glitch ---------- */
+  .glitch{position:relative;display:inline-block}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;inset:0;opacity:.85}
+  .glitch::before{color:#00e5ff;z-index:-1;animation:gA 3.1s infinite steps(1)}
+  .glitch::after{color:#ff0055;z-index:-2;animation:gB 2.7s infinite steps(1)}
+  @keyframes gA{0%,86%{transform:translate(0);clip-path:inset(0 0 100% 0)}
+    88%{transform:translate(-4px,2px);clip-path:inset(10% 0 55% 0)}
+    92%{transform:translate(3px,-1px);clip-path:inset(55% 0 15% 0)}
+    96%{transform:translate(-2px,1px);clip-path:inset(30% 0 40% 0)}
+    100%{transform:translate(0);clip-path:inset(0 0 100% 0)}}
+  @keyframes gB{0%,84%{transform:translate(0);clip-path:inset(0 0 100% 0)}
+    87%{transform:translate(4px,-2px);clip-path:inset(60% 0 5% 0)}
+    91%{transform:translate(-3px,2px);clip-path:inset(20% 0 65% 0)}
+    95%{transform:translate(2px,1px);clip-path:inset(45% 0 30% 0)}
+    100%{transform:translate(0);clip-path:inset(0 0 100% 0)}}
+
+  .cursor-blink{animation:blink 1s step-end infinite}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+
+  /* ---------- reveal ---------- */
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+  .reveal.visible{opacity:1;transform:none}
+
+  /* ---------- nav ---------- */
+  .nav-link{position:relative;transition:color .25s}
+  .nav-link::after{content:'';position:absolute;left:0;bottom:-4px;width:0;height:1px;background:#00ff41;transition:width .3s}
+  .nav-link:hover,.nav-link.active{color:#00ff41;text-shadow:0 0 12px rgba(0,255,65,.6)}
+  .nav-link:hover::after,.nav-link.active::after{width:100%}
+
+  /* ---------- buttons ---------- */
+  .btn-primary,.btn-ghost{font-family:'JetBrains Mono';letter-spacing:.15em;font-size:.85rem;padding:.8rem 1.6rem;
+    clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));transition:all .3s}
+  .btn-primary{background:linear-gradient(135deg,rgba(0,255,65,.18),rgba(0,229,255,.12));border:1px solid #00ff41;color:#00ff41}
+  .btn-primary:hover{background:#00ff41;color:#000;box-shadow:0 0 25px rgba(0,255,65,.7);transform:translateY(-2px)}
+  .btn-ghost{border:1px solid rgba(0,229,255,.5);color:#00e5ff}
+  .btn-ghost:hover{background:rgba(0,229,255,.12);box-shadow:0 0 20px rgba(0,229,255,.4);transform:translateY(-2px)}
+
+  /* ---------- terminal window ---------- */
+  .term-win{background:rgba(7,18,12,.88);border:1px solid rgba(0,255,65,.25);backdrop-filter:blur(6px);
+    box-shadow:0 0 40px rgba(0,255,65,.08),inset 0 0 60px rgba(0,255,65,.03)}
+  .term-head{background:rgba(0,255,65,.08);border-bottom:1px solid rgba(0,255,65,.2)}
+
+  /* ---------- section titles ---------- */
+  .sec-title{font-family:Orbitron;letter-spacing:.12em;color:#fff;display:flex;align-items:center;gap:1rem;font-size:clamp(1.4rem,3vw,2.1rem)}
+  .sec-title::after{content:'';height:1px;flex:1;max-width:320px;background:linear-gradient(90deg,rgba(0,255,65,.45),transparent)}
+
+  /* ---------- corners ---------- */
+  .corner{position:absolute;width:18px;height:18px;border-color:#00ff41;filter:drop-shadow(0 0 6px rgba(0,255,65,.8))}
+  .c-tl{top:-2px;left:-2px;border-top:2px solid;border-left:2px solid}
+  .c-tr{top:-2px;right:-2px;border-top:2px solid;border-right:2px solid}
+  .c-bl{bottom:-2px;left:-2px;border-bottom:2px solid;border-left:2px solid}
+  .c-br{bottom:-2px;right:-2px;border-bottom:2px solid;border-right:2px solid}
+
+  /* ---------- avatar ---------- */
+  .avatar-scan{position:absolute;left:0;right:0;height:60px;top:-20%;
+    background:linear-gradient(180deg,transparent,rgba(0,255,65,.22),transparent);animation:avScan 3.4s ease-in-out infinite}
+  @keyframes avScan{0%{top:-20%}50%{top:100%}100%{top:-20%}}
+
+  /* ---------- skill bars ---------- */
+  .bar{height:6px;background:rgba(0,255,65,.12);position:relative;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#00b32e,#00ff41);
+    box-shadow:0 0 12px rgba(0,255,65,.8);transition:width 1.4s cubic-bezier(.16,1,.3,1)}
+  .bar i::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 6px,rgba(0,0,0,.35) 6px 8px)}
+
+  /* ---------- chips ---------- */
+  .chip{border:1px solid rgba(0,255,65,.3);color:#9ffcb4;font-size:.72rem;padding:.3rem .7rem;transition:all .25s;
+    clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+  .chip:hover{background:rgba(0,255,65,.15);color:#00ff41;box-shadow:0 0 14px rgba(0,255,65,.35);transform:translateY(-2px)}
+
+  /* ---------- project cards ---------- */
+  .proj-card{background:rgba(7,18,12,.85);border:1px solid rgba(0,255,65,.18);transition:transform .25s ease,border-color .3s,box-shadow .3s;will-change:transform}
+  .proj-card:hover{border-color:rgba(0,255,65,.6);box-shadow:0 0 35px rgba(0,255,65,.15)}
+  .proj-card img{filter:saturate(.85) contrast(1.05)}
+  .proj-card:hover img{filter:saturate(1.1) contrast(1.1)}
+
+  /* ---------- blog ---------- */
+  .blog-row{border-left:2px solid rgba(0,255,65,.25);transition:all .3s}
+  .blog-row:hover{border-color:#00ff41;background:rgba(0,255,65,.05);transform:translateX(6px)}
+
+  /* ---------- marquee ---------- */
+  .marquee{animation:marquee 26s linear infinite}
+  .marquee:hover{animation-play-state:paused}
+  @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+  /* ---------- toast ---------- */
+  .toast{font-family:'JetBrains Mono';font-size:.8rem;color:#00ff41;background:#07120c;border:1px solid rgba(0,255,65,.5);
+    padding:.7rem 1rem;box-shadow:0 0 20px rgba(0,255,65,.25);animation:toastIn .3s ease;margin-top:.5rem;
+    clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+  .toast.out{opacity:0;transform:translateX(20px);transition:all .3s}
+  @keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+  /* ---------- forms ---------- */
+  .inp{background:rgba(0,255,65,.05);border:1px solid rgba(0,255,65,.25);color:#d8ffe4;width:100%;padding:.7rem .9rem;
+    font-family:'JetBrains Mono';font-size:.85rem;outline:none;transition:all .25s}
+  .inp:focus{border-color:#00ff41;box-shadow:0 0 15px rgba(0,255,65,.25);background:rgba(0,255,65,.09)}
+  .inp.err{border-color:#ff0055;box-shadow:0 0 12px rgba(255,0,85,.35)}
+
+  .flicker{animation:flick 6s infinite}
+  @keyframes flick{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.4}94%{opacity:1}96%{opacity:.6}97%{opacity:1}}
+
+  #mobileMenu{max-height:0;overflow:hidden;transition:max-height .4s ease}
+  #mobileMenu.open{max-height:420px}
+
+  .floaty{animation:floaty 5s ease-in-out infinite}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+</style>
+</head>
+<body class="font-mono text-gray-300">
+
+<!-- BOOT SEQUENCE -->
+<div id="boot" class="fixed inset-0 z-[1000] bg-[#020503] flex items-center justify-center">
+  <div class="w-[min(560px,90vw)] text-xs sm:text-sm text-term space-y-1">
+    <div id="bootLines" class="space-y-1"></div>
+    <div class="h-1 bg-term/10 mt-5"><div id="bootBar" class="h-full bg-term w-0" style="box-shadow:0 0 12px #00ff41"></div></div>
+    <p class="text-term/40 text-[10px] mt-2">[ click to skip ]</p>
+  </div>
+</div>
+
+<!-- BACKGROUND LAYERS -->
+<canvas id="matrix"></canvas>
+<div class="vignette"></div>
+<div class="scanlines"></div>
+<div class="scanbeam"></div>
+
+<!-- CURSOR -->
+<div id="cursorDot"></div><div id="cursorRing"></div>
+
+<!-- SCROLL PROGRESS -->
+<div id="progressBar" class="fixed top-0 left-0 h-[2px] bg-term z-[70]" style="width:0;box-shadow:0 0 10px #00ff41"></div>
+
+<!-- NAV -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-bgx/80 backdrop-blur-md border-b border-term/15">
+  <nav class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="#home" class="font-disp font-bold text-term text-lg tracking-widest flicker">
+      <span class="text-gray-500">root@</span>GH0ST_C0DE<span class="cursor-blink">_</span>
+    </a>
+    <ul class="hidden lg:flex items-center gap-8 text-[13px] tracking-wider">
+      <li><a class="nav-link" href="#home">&gt;./home</a></li>
+      <li><a class="nav-link" href="#about">&gt;./profile</a></li>
+      <li><a class="nav-link" href="#skills">&gt;./skills</a></li>
+      <li><a class="nav-link" href="#projects">&gt;./projects</a></li>
+      <li><a class="nav-link" href="#blog">&gt;./blog</a></li>
+      <li><a class="nav-link" href="#contact">&gt;./contact</a></li>
+      <li><a href="#contact" class="btn-primary !py-2 !px-4">HIRE ME</a></li>
+    </ul>
+    <button id="menuBtn" class="lg:hidden text-term text-2xl leading-none" aria-label="menu">≡</button>
+  </nav>
+  <div id="mobileMenu" class="lg:hidden bg-bgx/95 border-t border-term/15">
+    <ul class="px-6 py-4 space-y-3 text-sm">
+      <li><a class="nav-link block" href="#home">&gt;./home</a></li>
+      <li><a class="nav-link block" href="#about">&gt;./profile</a></li>
+      <li><a class="nav-link block" href="#skills">&gt;./skills</a></li>
+      <li><a class="nav-link block" href="#projects">&gt;./projects</a></li>
+      <li><a class="nav-link block" href="#blog">&gt;./blog</a></li>
+      <li><a class="nav-link block" href="#contact">&gt;./contact</a></li>
+    </ul>
+  </div>
+</header>
+
+<main class="relative z-10">
+
+<!-- ============ HERO ============ -->
+<section id="home" class="min-h-screen flex items-center pt-24 pb-10">
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-14 items-center w-full">
+    <div>
+      <p class="text-term text-sm mb-4 reveal visible">$ Hello, world — I am</p>
+      <h1 class="font-disp font-black text-5xl md:text-7xl text-white glitch flicker" data-text="GH0ST_C0DE">GH0ST_C0DE</h1>
+      <div class="mt-5 text-lg md:text-2xl text-cyanx h-8">&gt; <span id="roleType"></span><span class="cursor-blink text-term">▊</span></div>
+      <p class="mt-6 text-gray-400 max-w-xl text-sm md:text-base leading-relaxed">
+        I build fast things and break faster things. Full-stack developer by day,
+        security researcher by night — turning coffee into exploits, exploits into patches,
+        and patches into open source.
+      </p>
+      <div class="mt-9 flex flex-wrap gap-4">
+        <a href="#projects" class="btn-primary">VIEW PROJECTS ▸</a>
+        <a href="#contact" class="btn-ghost">CONTACT ME</a>
+      </div>
+      <div class="mt-9 flex items-center gap-5 text-gray-400">
+        <a href="https://github.com" target="_blank" rel="noopener" class="hover:text-term transition" aria-label="GitHub">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88 1.54-3.88 1.54-.52 1.33-1.28 1.68-1.28 1.68-1.04.71.08.7.08.7 1.15.08 1.76-1.18 1.76-1.18 1.03-1.75 2.69-1.25 3.35-.95.1.75.4 1.25.72 1.54-2.55.29-5.24 1.28-5.24 5.68 0 1.26.45 2.28 1.19 3.09-.12.29-.52 1.46.11 3.05 0 0 .97.31 3.18-1.18a11.1 11.1 0 0 0 5.8 0c2.2 1.49 3.17 1.18 3.17 1.18.63-1.59.23-2.76.11-3.05.74-.81 1.19-1.83 1.19-3.09 0-4.41-2.69-5.66-5.25-5.95.41-.36.78-1.06.78-2.14 0-1.55-.01-2.79-.01-3.17 0-.31.21-.67.8-.56A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+        </a>
+        <a href="https://x.com" target="_blank" rel="noopener" class="hover:text-term transition" aria-label="X">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93 6.07-6.93zm-1.29 19.5h2.04L6.49 3.24H4.3l13.31 17.41z"/></svg>
+        </a>
+        <a href="https://linkedin.com" target="_blank" rel="noopener" class="hover:text-term transition" aria-label="LinkedIn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+        </a>
+        <span class="text-term/50 text-xs">| status: <span class="text-term">open_to_work</span></span>
+      </div>
+    </div>
+
+    <!-- hero terminal -->
+    <div class="term-win reveal visible">
+      <div class="term-head flex items-center gap-2 px-4 py-2.5">
+        <span class="w-3 h-3 rounded-full bg-[#ff5f56]"></span>
+        <span class="w-3 h-3 rounded-full bg-[#ffbd2e]"></span>
+        <span class="w-3 h-3 rounded-full bg-[#27c93f]"></span>
+        <span class="ml-3 text-xs text-term/60">guest@gh0st: ~/portfolio — zsh</span>
+      </div>
+      <div id="termOut" class="p-5 text-[13px] leading-6 min-h-[260px] max-h-[320px] overflow-y-auto"></div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="border-y border-term/20 bg-panel/70 overflow-hidden py-2.5 text-xs tracking-widest text-term/80">
+  <div class="marquee flex whitespace-nowrap w-max">
+    <span class="px-4">⟨/⟩ DEF CON 33 FINALIST ⟨/⟩ 12 CVEs DISCOVERED ⟨/⟩ 320+ CTF CHALLENGES SOLVED ⟨/⟩ OPEN-SOURCE MAINTAINER ⟨/⟩ SPEAKER @ BLACK HAT 2025 ⟨/⟩ BUG BOUNTY TOP 1% ⟨/⟩ 7+ YEARS IN THE SHELL</span>
+    <span class="px-4">⟨/⟩ DEF CON 33 FINALIST ⟨/⟩ 12 CVEs DISCOVERED ⟨/⟩ 320+ CTF CHALLENGES SOLVED ⟨/⟩ OPEN-SOURCE MAINTAINER ⟨/⟩ SPEAKER @ BLACK HAT 2025 ⟨/⟩ BUG BOUNTY TOP 1% ⟨/⟩ 7+ YEARS IN THE SHELL</span>
+  </div>
+</div>
+
+<!-- ============ PROFILE / ABOUT ============ -->
+<section id="about" class="py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="sec-title reveal"><span class="text-term">//</span> 01. PROFILE</h2>
+    <div class="grid lg:grid-cols-[380px_1fr] gap-14 mt-14">
+      <div class="reveal">
+        <div class="relative floaty">
+          <i class="corner c-tl"></i><i class="corner c-tr"></i><i class="corner c-bl"></i><i class="corner c-br"></i>
+          <div class="relative overflow-hidden border border-term/30">
+            <img src="https://image.qwenlm.ai/public_source/5bab9a47-1877-4f5c-8802-58f2cbd951a5/19d57353d-81c1-40c6-9abb-ec31f7630d51.png" alt="GH0ST_C0DE avatar" class="w-full aspect-square object-cover grayscale contrast-110 hover:grayscale-0 transition duration-700">
+            <div class="avatar-scan"></div>
+            <div class="absolute bottom-3 left-3 bg-bgx/85 border border-term/40 px-3 py-1 text-xs text-term">● ONLINE</div>
+          </div>
+        </div>
+        <div class="term-win mt-6 p-4 text-xs space-y-1.5">
+          <p><span class="text-term">$</span> id: <span class="text-white">Jaxon Cole</span></p>
+          <p><span class="text-term">$</span> alias: <span class="text-cyanx">GH0ST_C0DE</span></p>
+          <p><span class="text-term">$</span> pgp: <span class="text-gray-400">4F2A 9C1B 00DE AD13</span></p>
+          <p><span class="text-term">$</span> trust_level: <span class="text-term">[██████████] 100%</span></p>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <h3 class="font-disp font-bold text-2xl md:text-3xl text-white">JAXON <span class="text-term">"GH0ST_C0DE"</span> COLE</h3>
+        <p class="text-cyanx mt-2 text-sm tracking-widest">FULL-STACK DEVELOPER × SECURITY RESEARCHER</p>
+        <p class="mt-6 text-gray-400 leading-relaxed text-sm md:text-base">
+          I slipped my first SQL injection at 15 (on my school's website — they thanked me, eventually).
+          Seven years later I design and build full-stack systems that are secure by default, hunt
+          vulnerabilities in other people's code, and maintain a small arsenal of open-source security tooling.
+        </p>
+        <p class="mt-4 text-gray-400 leading-relaxed text-sm md:text-base">
+          My happy place is the intersection of <span class="text-term">engineering</span> and
+          <span class="text-term">offense</span>: writing clean TypeScript by day, reversing firmware in Ghidra
+          by night. I believe every system is breakable — my job is to find out how before someone unfriendly does.
+        </p>
+        <ul class="grid sm:grid-cols-2 gap-2.5 mt-7 text-sm text-gray-300">
+          <li><span class="text-term">&gt;</span> location: <span class="text-white">Berlin / remote</span></li>
+          <li><span class="text-term">&gt;</span> focus: <span class="text-white">AppSec · Red Team · Full-Stack</span></li>
+          <li><span class="text-term">&gt;</span> clearance: <span class="text-white">COSMIC_TOP_SECRET</span></li>
+          <li><span class="text-term">&gt;</span> languages: <span class="text-white">EN · DE · 日本語 · bash</span></li>
+        </ul>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-9">
+          <div class="term-win p-4 text-center"><p class="font-disp font-bold text-3xl text-term counter" data-count="7" data-suffix="+">0</p><p class="text-[11px] text-gray-500 mt-1 tracking-widest">YEARS EXP</p></div>
+          <div class="term-win p-4 text-center"><p class="font-disp font-bold text-3xl text-term counter" data-count="48" data-suffix="">0</p><p class="text-[11px] text-gray-500 mt-1 tracking-widest">PROJECTS</p></div>
+          <div class="term-win p-4 text-center"><p class="font-disp font-bold text-3xl text-term counter" data-count="12" data-suffix="">0</p><p class="text-[11px] text-gray-500 mt-1 tracking-widest">CVEs FOUND</p></div>
+          <div class="term-win p-4 text-center"><p class="font-disp font-bold text-3xl text-term counter" data-count="320" data-suffix="+">0</p><p class="text-[11px] text-gray-500 mt-1 tracking-widest">CTF SOLVES</p></div>
+        </div>
+
+        <div class="mt-9 flex flex-wrap gap-4">
+          <button id="resumeBtn" class="btn-primary">⬇ DOWNLOAD RESUME</button>
+          <a href="https://github.com" target="_blank" rel="noopener" class="btn-ghost">GITHUB ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SKILLS ============ -->
+<section id="skills" class="py-24 bg-panel/40 border-y border-term/10">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="sec-title reveal"><span class="text-term">//</span> 02. SKILLS</h2>
+    <div class="grid lg:grid-cols-2 gap-14 mt-14">
+      <div class="space-y-6 reveal" id="skillBars">
+        <div><div class="flex justify-between text-sm mb-2"><span class="text-white">Python</span><span class="text-term">95%</span></div><div class="bar"><i data-level="95"></i></div></div>
+        <div><div class="flex justify-between text-sm mb-2"><span class="text-white">TypeScript / Node</span><span class="text-term">92%</span></div><div class="bar"><i data-level="92"></i></div></div>
+        <div><div class="flex justify-between text-sm mb-2"><span class="text-white">Rust</span><span class="text-term">88%</span></div><div class="bar"><i data-level="88"></i></div></div>
+        <div><div class="flex justify-between text-sm mb-2"><span class="text-white">Go</span><span class="text-term">82%</span></div><div class="bar"><i data-level="82"></i></div></div>
+        <div><div class="flex justify-between text-sm mb-2"><span class="text-white">C / C++ (reversing)</span><span class="text-term">76%</span></div><div class="bar"><i data-level="76"></i></div></div>
+        <div><div class="flex justify-between text-sm mb-2"><span class="text-white">SQL / NoSQL</span><span class="text-term">86%</span></div><div class="bar"><i data-level="86"></i></div></div>
+      </div>
+      <div class="reveal">
+        <h3 class="text-term text-sm tracking-widest mb-5">&gt; ARSENAL_</h3>
+        <div class="flex flex-wrap gap-2.5">
+          <span class="chip">Docker</span><span class="chip">Kubernetes</span><span class="chip">AWS</span>
+          <span class="chip">Kali Linux</span><span class="chip">Burp Suite</span><span class="chip">Ghidra</span>
+          <span class="chip">Metasploit</span><span class="chip">Wireshark</span><span class="chip">PyTorch</span>
+          <span class="chip">React</span><span class="chip">Next.js</span><span class="chip">PostgreSQL</span>
+          <span class="chip">Redis</span><span class="chip">GraphQL</span><span class="chip">gRPC</span>
+          <span class="chip">Terraform</span><span class="chip">CI/CD</span><span class="chip">eBPF</span>
+        </div>
+        <h3 class="text-term text-sm tracking-widest mt-10 mb-5">&gt; CERTIFICATIONS_</h3>
+        <ul class="space-y-3 text-sm">
+          <li class="term-win px-4 py-3 flex justify-between items-center"><span class="text-white">OSCP — Offensive Security</span><span class="text-term">[✓]</span></li>
+          <li class="term-win px-4 py-3 flex justify-between items-center"><span class="text-white">AWS Solutions Architect</span><span class="text-term">[✓]</span></li>
+          <li class="term-win px-4 py-3 flex justify-between items-center"><span class="text-white">eWPTX — Web Penetration Testing</span><span class="text-term">[✓]</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROJECTS ============ -->
+<section id="projects" class="py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="sec-title reveal"><span class="text-term">//</span> 03. PROJECTS</h2>
+    <p class="text-gray-500 text-sm mt-4 reveal">$ ls -la ./featured_builds --sort=impact</p>
+    <div class="grid md:grid-cols-2 gap-8 mt-12">
+
+      <article class="proj-card tilt reveal group">
+        <div class="relative overflow-hidden">
+          <img src="https://image.qwenlm.ai/public_source/5bab9a47-1877-4f5c-8802-58f2cbd951a5/16c1e566c-b69c-4c47-ab8d-ae5eebd4d6ef.png" alt="SpectreScan" class="w-full aspect-video object-cover transition duration-700 group-hover:scale-105">
+          <span class="absolute top-3 left-3 bg-bgx/85 border border-term/40 text-term text-[11px] px-2 py-0.5">PRJ_01</span>
+          <div class="absolute inset-0 bg-gradient-to-t from-panel to-transparent opacity-60"></div>
+        </div>
+        <div class="p-6">
+          <h3 class="font-disp font-bold text-lg text-white group-hover:text-term transition">SpectreScan</h3>
+          <p class="text-gray-400 text-sm mt-3 leading-relaxed">AI-driven network reconnaissance & vulnerability scanner. Maps attack surfaces in real time and ranks exploits by impact — used by 3 red teams I know of.</p>
+          <div class="flex flex-wrap gap-2 mt-4 text-[11px] text-cyanx"><span class="chip">Rust</span><span class="chip">Python</span><span class="chip">TensorFlow</span></div>
+          <div class="flex gap-5 mt-5 text-xs tracking-widest">
+            <a class="text-term hover:text-white transition" href="https://github.com" target="_blank" rel="noopener">[SOURCE]</a>
+            <a class="text-cyanx hover:text-white transition" href="https://github.com" target="_blank" rel="noopener">[LIVE_DEMO]</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="proj-card tilt reveal group">
+        <div class="relative overflow-hidden">
+          <img src="https://image.qwenlm.ai/public_source/5bab9a47-1877-4f5c-8802-58f2cbd951a5/1134ee687-1224-48e4-94e3-85fd0adf6a3b.png" alt="CipherVault" class="w-full aspect-video object-cover transition duration-700 group-hover:scale-105">
+          <span class="absolute top-3 left-3 bg-bgx/85 border border-term/40 text-term text-[11px] px-2 py-0.5">PRJ_02</span>
+          <div class="absolute inset-0 bg-gradient-to-t from-panel to-transparent opacity-60"></div>
+        </div>
+        <div class="p-6">
+          <h3 class="font-disp font-bold text-lg text-white group-hover:text-term transition">CipherVault</h3>
+          <p class="text-gray-400 text-sm mt-3 leading-relaxed">Zero-knowledge encrypted file storage with client-side AES-256 + XChaCha20 layers. Not even I can read your files. 4.2k GitHub stars.</p>
+          <div class="flex flex-wrap gap-2 mt-4 text-[11px] text-cyanx"><span class="chip">Go</span><span class="chip">libsodium</span><span class="chip">React</span></div>
+          <div class="flex gap-5 mt-5 text-xs tracking-widest">
+            <a class="text-term hover:text-white transition" href="https://github.com" target="_blank" rel="noopener">[SOURCE]</a>
+            <a class="text-cyanx hover:text-white transition" href="https://github.com" target="_blank" rel="noopener">[LIVE_DEMO]</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="proj-card tilt reveal group">
+        <div class="relative overflow-hidden">
+          <img src="https://image.qwenlm.ai/public_source/5bab9a47-1877-4f5c-8802-58f2cbd951a5/1087a6eb1-5a31-4334-970c-6579671bdeae.png" alt="NeuralSentinel" class="w-full aspect-video object-cover transition duration-700 group-hover:scale-105">
+          <span class="absolute top-3 left-3 bg-bgx/85 border border-term/40 text-term text-[11px] px-2 py-0.5">PRJ_03</span>
+          <div class="absolute inset-0 bg-gradient-to-t from-panel to-transparent opacity-60"></div>
+        </div>
+        <div class="p-6">
+          <h3 class="font-disp font-bold text-lg text-white group-hover:text-term transition">NeuralSentinel</h3>
+          <p class="text-gray-400 text-sm mt-3 leading-relaxed">Real-time malware detection with deep learning — 99.1% recall on packed samples, GPU-accelerated, ships as a drop-in eBPF sensor.</p>
+          <div class="flex flex-wrap gap-2 mt-4 text-[11px] text-cyanx"><span class="chip">PyTorch</span><span class="chip">CUDA</span><span class="chip">eBPF</span></div>
+          <div class="flex gap-5 mt-5 text-xs tracking-widest">
+            <a class="text-term hover:text-white transition" href="https://github.com" target="_blank" rel="noopener">[SOURCE]</a>
+            <a class="text-cyanx hover:text-white transition" href="https://github.com" target="_blank" rel="noopener">[PAPER]</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="proj-card tilt reveal group">
+        <div class="relative overflow-hidden">
+          <img src="https://image.qwenlm.ai/public_source/5bab9a47-1877-4f5c-8802-58f2cbd951a5/1716b76c1-a777-4d67-8ce5-d3d9b77a7835.png" alt="GhostGrid" class="w-full aspect-video object-cover transition duration-700 group-hover:scale-105">
+          <span class="absolute top-3 left-3 bg-bgx/85 border border-term/40 text-term text-[11px] px-2 py-0.5">PRJ_04</span>
+          <div class="absolute inset-0 bg-gradient-to-t from-panel to-transparent opacity-60"></div>
+        </div>
+        <div class="p-6">
+          <h3 class="font-disp font-bold text-lg text-white group-hover:text-term transition">GhostGrid</h3>
+          <p class="text-gray-400 text-sm mt-3 leading-relaxed">Distributed pentest orchestration platform: spin up ephemeral attack infra on K8s, coordinate engagements, auto-generate reports.</p>
+          <div class="flex flex-wrap gap-2 mt-4 text-[11px] text-cyanx"><span class="chip">Node.js</span><span class="chip">Kubernetes</span><span class="chip">Redis</span></div>
+          <div class="flex gap-5 mt-5 text-xs tracking-widest">
+            <a class="text-term hover:text-white transition" href="https://github.com" target="_blank" rel="noopener">[SOURCE]</a>
+            <a class="text-cyanx hover:text-white transition" href="https://github.com" target="_blank" rel="noopener">[DOCS]</a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ BLOG ============ -->
+<section id="blog" class="py-24 bg-panel/40 border-y border-term/10">
+  <div class="max-w-5xl mx-auto px-6">
+    <h2 class="sec-title reveal"><span class="text-term">//</span> 04. BLOG</h2>
+    <p class="text-gray-500 text-sm mt-4 reveal">$ tail -f /var/log/ghost_writeups.log</p>
+    <div class="mt-12 space-y-5">
+
+      <article class="blog-row reveal term-win p-6 cursor-pointer" data-toast="Decrypting writeup... access granted ✓">
+        <div class="flex flex-wrap items-center gap-3 text-[11px]"><span class="text-term">[2026-08-21]</span><span class="chip">RED_TEAM</span><span class="text-gray-500">· 12 min read</span></div>
+        <h3 class="text-white font-bold mt-3 group-hover:text-term">Bypassing WAFs with Polymorphic Payloads</h3>
+        <p class="text-gray-400 text-sm mt-2">How mutation-based encoding slips past signature filters — and the detection strategies that actually catch it.</p>
+      </article>
+
+      <article class="blog-row reveal term-win p-6 cursor-pointer" data-toast="Decrypting writeup... access granted ✓">
+        <div class="flex flex-wrap items-center gap-3 text-[11px]"><span class="text-term">[2026-07-30]</span><span class="chip">HARDWARE</span><span class="text-gray-500">· 9 min read</span></div>
+        <h3 class="text-white font-bold mt-3">Reverse Engineering a "Secure" Smart Lock in 48 Hours</h3>
+        <p class="text-gray-400 text-sm mt-2">UART dumps, a hardcoded AES key, and a firmware backdoor. Your door is not as locked as you think.</p>
+      </article>
+
+      <article class="blog-row reveal term-win p-6 cursor-pointer" data-toast="Decrypting writeup... access granted ✓">
+        <div class="flex flex-wrap items-center gap-3 text-[11px]"><span class="text-term">[2026-06-14]</span><span class="chip">WEB_SEC</span><span class="text-gray-500">· 7 min read</span></div>
+        <h3 class="text-white font-bold mt-3">Your JWT Implementation Is Probably Broken</h3>
+        <p class="text-gray-400 text-sm mt-2">alg:none, key confusion, missing audience checks — a field guide to the classic token fails, with patches.</p>
+      </article>
+
+      <article class="blog-row reveal term-win p-6 cursor-pointer" data-toast="Decrypting writeup... access granted ✓">
+        <div class="flex flex-wrap items-center gap-3 text-[11px]"><span class="text-term">[2026-05-02]</span><span class="chip">INFRA</span><span class="text-gray-500">· 15 min read</span></div>
+        <h3 class="text-white font-bold mt-3">Building a Home Lab That Scares the NSA (Legally)</h3>
+        <p class="text-gray-400 text-sm mt-2">Vulnerable-by-design VMs, traffic capture, and a SIEM on a raspberry pi budget. Full build guide inside.</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section id="contact" class="py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="sec-title reveal"><span class="text-term">//</span> 05. CONTACT</h2>
+    <div class="grid lg:grid-cols-2 gap-14 mt-14">
+
+      <div class="reveal">
+        <h3 class="font-disp font-bold text-2xl text-white">OPEN A <span class="text-term">SECURE CHANNEL</span></h3>
+        <p class="text-gray-400 text-sm mt-4 leading-relaxed">Got a project, a bounty, or a suspicious binary? My inbox is end-to-end encrypted and judgment-free. Average response time: <span class="text-term">&lt; 24h</span>.</p>
+        <form id="contactForm" class="mt-8 space-y-5" novalidate>
+          <div class="grid sm:grid-cols-2 gap-5">
+            <div><label class="text-xs text-term block mb-2">&gt; your_name:</label><input id="fName" class="inp" type="text" placeholder="Neo Anderson" autocomplete="name"></div>
+            <div><label class="text-xs text-term block mb-2">&gt; your_email:</label><input id="fEmail" class="inp" type="email" placeholder="neo@zion.io" autocomplete="email"></div>
+          </div>
+          <div><label class="text-xs text-term block mb-2">&gt; payload:</label><textarea id="fMsg" class="inp" rows="6" placeholder="Describe your mission..."></textarea></div>
+          <button id="sendBtn" type="submit" class="btn-primary w-full sm:w-auto">SEND MESSAGE ▸</button>
+        </form>
+      </div>
+
+      <div class="reveal">
+        <div class="term-win">
+          <div class="term-head flex items-center gap-2 px-4 py-2.5">
+            <span class="w-3 h-3 rounded-full bg-[#ff5f56]"></span>
+            <span class="w-3 h-3 rounded-full bg-[#ffbd2e]"></span>
+            <span class="w-3 h-3 rounded-full bg-[#27c93f]"></span>
+            <span class="ml-3 text-xs text-term/60">visitor@gh0st: ~/contact — interactive</span>
+          </div>
+          <div id="mtOut" class="h-60 overflow-y-auto p-4 text-[13px] leading-6 space-y-1">
+            <p class="text-gray-500"># type <span class="text-term">help</span> to list available commands</p>
+          </div>
+          <div class="flex items-center gap-2 px-4 py-3 border-t border-term/20">
+            <span class="text-cyanx text-sm whitespace-nowrap">visitor@gh0st:~$</span>
+            <input id="mtIn" class="flex-1 bg-transparent outline-none text-term text-sm" autocomplete="off" spellcheck="false" aria-label="terminal input">
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4 mt-6 text-sm">
+          <div class="term-win p-4"><p class="text-gray-500 text-xs">EMAIL</p><p class="text-term mt-1">gh0st@nullbyte.dev</p></div>
+          <div class="term-win p-4"><p class="text-gray-500 text-xs">SIGNAL</p><p class="text-term mt-1">@gh0stc0de.01</p></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="relative z-10 border-t border-term/15 py-8 bg-bgx/90">
+  <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+    <p>© 2026 <span class="text-term">GH0ST_C0DE</span> — designed & built in the terminal. All rights reserved.</p>
+    <p class="text-gray-600">sha256: 9f2c…e77a · no cookies, only <span class="text-term">crumbs</span><span class="cursor-blink text-term">▊</span></p>
+  </div>
+</footer>
+
+<div id="toasts" class="fixed bottom-5 right-5 z-[200] flex flex-col items-end"></div>
+
+<script>
+/* ================= helpers ================= */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function toast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = '> ' + msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(), 320); }, 2600);
+}
+
+/* ================= matrix rain ================= */
+const cvs = document.getElementById('matrix'), ctx = cvs.getContext('2d');
+let W, H, drops = [], fontSize = 14;
+const chars = 'アカサタナハマヤラワ01<>/[]{}#$%&*+=?;:アイウエオ';
+function sizeMatrix(){
+  W = cvs.width = innerWidth; H = cvs.height = innerHeight;
+  const cols = Math.ceil(W / fontSize);
+  drops = Array.from({length: cols}, () => Math.random() * -H / fontSize | 0);
+}
+sizeMatrix(); addEventListener('resize', sizeMatrix);
+let lastT = 0;
+function rain(t){
+  requestAnimationFrame(rain);
+  const interval = document.body.classList.contains('overdrive') ? 30 : 60;
+  if (t - lastT < interval) return; lastT = t;
+  ctx.fillStyle = 'rgba(4,9,6,0.10)'; ctx.fillRect(0,0,W,H);
+  ctx.font = fontSize + 'px monospace';
+  for (let i = 0; i < drops.length; i++){
+    const ch = chars[Math.random() * chars.length | 0];
+    ctx.fillStyle = Math.random() > 0.975 ? '#c9ffd8' : (document.body.classList.contains('overdrive') && Math.random() > .8 ? '#00e5ff' : '#00ff41');
+    ctx.fillText(ch, i * fontSize, drops[i] * fontSize);
+    if (drops[i] * fontSize > H && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  }
+}
+requestAnimationFrame(rain);
+
+/* ================= custom cursor ================= */
+if (matchMedia('(pointer:fine)').matches){
+  const dot = document.getElementById('cursorDot'), ring = document.getElementById('cursorRing');
+  let mx = innerWidth/2, my = innerHeight/2, rx = mx, ry = my;
+  addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    dot.style.transform = `translate(${mx-3}px,${my-3}px)`;
+  });
+  (function loop(){
+    rx += (mx-rx)*0.16; ry += (my-ry)*0.16;
+    ring.style.transform = `translate(${rx-17}px,${ry-17}px)`;
+    requestAnimationFrame(loop);
+  })();
+  addEventListener('mouseover', e => {
+    ring.classList.toggle('hov', !!e.target.closest('a,button,input,textarea,.tilt,.blog-row'));
+  });
+}
+
+/* ================= boot sequence ================= */
+const bootLines = [
+  '[ 0.000000] GHOST_KERNEL v4.2.0 booting...',
+  '[  OK  ] CPU: quantum core @ 9.99 THz',
+  '[  OK  ] Mounting /dev/portfolio',
+  '[  OK  ] Loading modules: crypto · recon · exploit',
+  '[  OK  ] Firewall: disabled (yolo)',
+  '[  OK  ] Establishing encrypted uplink...',
+  '[  OK  ] Identity verified: GH0ST_C0DE',
+  '> ACCESS GRANTED'
+];
+const bootEl = document.getElementById('boot'), bootLinesEl = document.getElementById('bootLines'), bootBar = document.getElementById('bootBar');
+let bootDone = false;
+async function runBoot(){
+  for (let i = 0; i < bootLines.length; i++){
+    if (bootDone) break;
+    const p = document.createElement('p');
+    p.innerHTML = bootLines[i].startsWith('&gt;') || bootLines[i].startsWith('>')
+      ? '<span class="text-white bg-term/20 px-2">' + bootLines[i] + '</span>'
+      : bootLines[i].replace('[  OK  ]', '<span class="text-term">[  OK  ]</span>');
+    bootLinesEl.appendChild(p);
+    bootBar.style.width = ((i+1)/bootLines.length*100) + '%';
+    await sleep(bootDone ? 0 : 220);
+  }
+  finishBoot();
+}
+function finishBoot(){
+  if (bootDone) return; bootDone = true;
+  bootBar.style.width = '100%';
+  setTimeout(()=>{ bootEl.classList.add('done'); setTimeout(()=>bootEl.remove(), 700); runHeroTerminal(); }, 350);
+}
+bootEl.addEventListener('click', finishBoot);
+runBoot();
+
+/* ================= hero terminal typing ================= */
+async function runHeroTerminal(){
+  const out = document.getElementById('termOut');
+  const prompt = 'guest@gh0st:~$ ';
+  const seq = [
+    {t:'cmd', s:'whoami'},
+    {t:'out', s:'j4x0n_c0le — full-stack developer // security researcher'},
+    {t:'cmd', s:'./init_portfolio --mode=stealth'},
+    {t:'out', s:'[✓] modules loaded   [✓] exploits holstered   [✓] coffee injected'},
+    {t:'cmd', s:'cat mission.txt'},
+    {t:'out', s:'> I build fast things. I break faster things.'},
+    {t:'cmd', s:'sudo invite_you --to=explore'},
+    {t:'out', s:'[✓] access granted. scroll down, visitor.'}
+  ];
+  for (const ln of seq){
+    const row = document.createElement('div');
+    if (ln.t === 'cmd'){
+      row.innerHTML = '<span class="text-cyanx">' + prompt + '</span><span class="tt text-white"></span>';
+      out.appendChild(row);
+      const span = row.querySelector('.tt');
+      for (const ch of ln.s){ span.textContent += ch; await sleep(38 + Math.random()*45); }
+      await sleep(180);
+    } else {
+      row.className = 'text-term/90 pl-4 mb-1';
+      row.textContent = ln.s;
+      out.appendChild(row);
+      await sleep(320);
+    }
+    out.scrollTop = out.scrollHeight;
+  }
+  const fin = document.createElement('div');
+  fin.innerHTML = '<span class="text-cyanx">' + prompt + '</span><span class="cursor-blink text-term">▊</span>';
+  out.appendChild(fin);
+}
+
+/* ================= role rotator ================= */
+const roles = ['Security Researcher','Full-Stack Developer','CTF Player & Bug Hunter','Open-Source Maintainer'];
+let ri = 0, ci = 0, del = false;
+(function roleLoop(){
+  const el = document.getElementById('roleType'), word = roles[ri];
+  if (!del){ ci++; if (ci >= word.length){ ci = word.length; del = true; el.textContent = word; setTimeout(roleLoop, 1700); return; } }
+  else { ci--; if (ci <= 0){ ci = 0; del = false; ri = (ri+1) % roles.length; } }
+  el.textContent = word.slice(0, ci);
+  setTimeout(roleLoop, del ? 38 : 85);
+})();
+
+/* ================= reveal / counters / bars ================= */
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); }
+}), {threshold:.15});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+const cio = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return; cio.unobserve(e.target);
+  const el = e.target, target = +el.dataset.count, suf = el.dataset.suffix || '', t0 = performance.now();
+  (function step(t){
+    const p = Math.min((t - t0) / 1400, 1), ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * ease) + suf;
+    if (p < 1) requestAnimationFrame(step);
+  })(t0);
+}), {threshold:.5});
+document.querySelectorAll('.counter').forEach(el => cio.observe(el));
+
+const sio = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return; sio.unobserve(e.target);
+  e.target.querySelectorAll('.bar i').forEach(b => b.style.width = b.dataset.level + '%');
+}), {threshold:.3});
+sio.observe(document.getElementById('skillBars'));
+
+/* ================= tilt cards ================= */
+document.querySelectorAll('.tilt').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+    card.style.transform = `perspective(900px) rotateY(${x*7}deg) rotateX(${-y*7}deg) translateY(-4px)`;
+  });
+  card.addEventListener('mouseleave', () => card.style.transform = '');
+});
+
+/* ================= nav: progress / spy / mobile ================= */
+addEventListener('scroll', () => {
+  const h = document.documentElement;
+  document.getElementById('progressBar').style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
+}, {passive:true});
+
+const spy = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  document.querySelectorAll('.nav-link').forEach(l =>
+    l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+}), {rootMargin:'-45% 0px -50% 0px'});
+document.querySelectorAll('section[id]').forEach(s => spy.observe(s));
+
+const menuBtn = document.getElementById('menuBtn'), mobileMenu = document.getElementById('mobileMenu');
+menuBtn.addEventListener('click', () => {
+  const open = mobileMenu.classList.toggle('open');
+  menuBtn.textContent = open ? '✕' : '≡';
+});
+mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  mobileMenu.classList.remove('open'); menuBtn.textContent = '≡';
+}));
+
+/* ================= resume download ================= */
+document.getElementById('resumeBtn').addEventListener('click', () => {
+  const txt =
+`==============================================
+ JAXON "GH0ST_C0DE" COLE — RESUME
+ Full-Stack Developer × Security Researcher
+ Berlin / remote · gh0st@nullbyte.dev
+==============================================
+ EXPERIENCE
+  · Senior Security Engineer — RedTeam Labs (2023–now)
+  · Full-Stack Developer — NullByte Systems (2020–23)
+  · Freelance pentester & bug bounty (2019–now)
+ SKILLS
+  python · rust · typescript · go · c/c++ · sql
+  docker · k8s · aws · ghidra · burp · pytorch
+ HIGHLIGHTS
+  · 12 CVEs · OSCP · DEF CON 33 finalist · 4.2k★ OSS
+==============================================`;
+  const blob = new Blob([txt], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'GH0ST_C0DE_resume.txt';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('resume decrypted & downloaded ✓');
+});
+
+/* ================= contact form ================= */
+document.getElementById('contactForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = document.getElementById('fName'), m = document.getElementById('fEmail'), g = document.getElementById('fMsg');
+  let ok = true;
+  [n,m,g].forEach(f => f.classList.remove('err'));
+  if (!n.value.trim()){ n.classList.add('err'); ok = false; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.value)){ m.classList.add('err'); ok = false; }
+  if (!g.value.trim()){ g.classList.add('err'); ok = false; }
+  if (!ok){ toast('ERR: all fields required, human.'); return; }
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true; btn.textContent = 'ENCRYPTING ▮▮▮';
+  setTimeout(() => {
+    btn.textContent = 'TRANSMITTED ✓';
+    toast('message encrypted & transmitted ✓');
+    e.target.reset();
+    setTimeout(() => { btn.textContent = 'SEND MESSAGE ▸'; btn.disabled = false; }, 2400);
+  }, 1400);
+});
+
+/* ================= blog toast ================= */
+document.querySelectorAll('[data-toast]').forEach(el =>
+  el.addEventListener('click', () => toast(el.dataset.toast)));
+
+/* ================= mini terminal ================= */
+const mtOut = document.getElementById('mtOut'), mtIn = document.getElementById('mtIn');
+const history = []; let hIdx = -1;
+const CMDS = {
+  help: () => ['available commands:',
+    '  help      show this list',
+    '  whoami    who is gh0st_c0de',
+    '  skills    print tech stack',
+    '  projects  list featured builds',
+    '  contact   reach me securely',
+    '  socials   my handles',
+    '  date      current timestamp',
+    '  matrix    toggle matrix overdrive',
+    '  sudo      try it ;)',
+    '  clear     wipe terminal'],
+  whoami: () => ['Jaxon "GH0ST_C0DE" Cole — full-stack dev & security researcher.',
+    '7+ years breaking (then fixing) things on the internet.'],
+  skills: () => ['python · rust · typescript · go · c/c++ · sql',
+    'docker · k8s · aws · ghidra · burp · pytorch'],
+  projects: () => ['[01] SpectreScan     — AI recon scanner',
+    '[02] CipherVault     — zero-knowledge storage',
+    '[03] NeuralSentinel  — ML malware detection',
+    '[04] GhostGrid       — pentest orchestration'],
+  contact: () => ['mail: gh0st@nullbyte.dev', 'signal: @gh0stc0de.01', 'pgp: 4F2A 9C1B 00DE AD13'],
+  socials: () => ['github.com/gh0stc0de · x.com/gh0stc0de · linkedin.com/in/gh0stc0de'],
+  date: () => [new Date().toString()],
+  sudo: () => ['[sudo] password for visitor: ********', 'permission denied: nice try, script kiddie.'],
+  hack: () => ['initiating mainframe breach...', '██▓▒░ just kidding. go touch grass.'],
+  exit: () => ['there is no escape.'],
+  ls: () => ['about  skills  projects  blog  contact'],
+  clear: () => { mtOut.innerHTML = ''; return []; },
+  matrix: () => {
+    const on = document.body.classList.toggle('overdrive');
+    return ['matrix overdrive ' + (on ? 'ENGAGED ⚡' : 'disengaged.')];
+  }
+};
+mtIn.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp'){ if (hIdx > 0){ hIdx--; mtIn.value = history[hIdx] || ''; } e.preventDefault(); return; }
+  if (e.key === 'ArrowDown'){ if (hIdx < history.length){ hIdx++; mtIn.value = history[hIdx] || ''; } e.preventDefault(); return; }
+  if (e.key !== 'Enter') return;
+  const cmd = mtIn.value.trim().toLowerCase();
+  mtIn.value = '';
+  if (!cmd) return;
+  history.push(cmd); hIdx = history.length;
+  const p = document.createElement('p');
+  p.innerHTML = '<span class="text-cyanx">visitor@gh0st:~$</span> <span class="text-white">' + cmd.replace(/</g,'&lt;') + '</span>';
+  mtOut.appendChild(p);
+  const fn = CMDS[cmd];
+  const lines = fn ? fn() : ['command not found: ' + cmd + " — type 'help'"];
+  lines.forEach(l => {
+    const o = document.createElement('p');
+    o.className = 'text-term/90'; o.textContent = l;
+    mtOut.appendChild(o);
+  });
+  mtOut.scrollTop = mtOut.scrollHeight;
+});
+mtOut.parentElement.addEventListener('click', () => mtIn.focus());
+</script>
+</body>
+</html>
